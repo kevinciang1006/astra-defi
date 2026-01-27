@@ -1,4 +1,4 @@
-export { getRedisClient, closeRedisConnection } from './client';
+export { getRedisClient, closeRedisConnection, isRedisAvailable } from './client';
 export {
   CacheKeys,
   buildKey,

@@ -57,7 +57,12 @@ export async function GET(
 
     return success(portfolio);
   } catch (error) {
-    console.error('[API] Portfolio fetch error:', error);
-    return errors.internalError('Failed to fetch portfolio data');
+    // Log detailed error for debugging
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : '';
+    console.error('[API] Portfolio fetch error:', errorMessage);
+    console.error('[API] Stack trace:', errorStack);
+
+    return errors.internalError(`Failed to fetch portfolio data: ${errorMessage}`);
   }
 }
