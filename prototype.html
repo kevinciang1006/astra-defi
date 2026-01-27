@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AstraDeFi - Multi-Chain Yield Tracking Dashboard</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --primary-bg: #0a0e17;
+        --secondary-bg: #141929;
+        --card-bg: #1a1f35;
+        --accent: #6366f1;
+        --accent-hover: #4f46e5;
+        --text-primary: #e5e7eb;
+        --text-secondary: #9ca3af;
+        --border: #2d3348;
+        --success: #10b981;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+        background: var(--primary-bg);
+        color: var(--text-primary);
+        line-height: 1.6;
+        min-height: 100vh;
+      }
+
+      .navbar {
+        background: var(--secondary-bg);
+        border-bottom: 1px solid var(--border);
+        padding: 1rem 2rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--accent);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .logo-icon {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, var(--accent), #8b5cf6);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 2rem;
+        align-items: center;
+      }
+
+      .nav-links a {
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: color 0.2s;
+        font-weight: 500;
+      }
+
+      .nav-links a:hover {
+        color: var(--text-primary);
+      }
+
+      .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.95rem;
+      }
+
+      .btn-primary {
+        background: var(--accent);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: var(--accent-hover);
+        transform: translateY(-1px);
+      }
+
+      .btn-secondary {
+        background: var(--card-bg);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+      }
+
+      .btn-secondary:hover {
+        background: var(--secondary-bg);
+      }
+
+      .landing {
+        text-align: center;
+        padding: 6rem 2rem;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .landing h1 {
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+        background: linear-gradient(135deg, var(--accent), #8b5cf6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .landing p {
+        font-size: 1.25rem;
+        color: var(--text-secondary);
+        margin-bottom: 3rem;
+        line-height: 1.8;
+      }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-top: 4rem;
+        text-align: left;
+      }
+
+      .feature-card {
+        background: var(--card-bg);
+        padding: 2rem;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+      }
+
+      .feature-card h3 {
+        color: var(--accent);
+        margin-bottom: 0.75rem;
+      }
+
+      .feature-card p {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+      }
+
+      .dashboard {
+        display: none;
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .dashboard.active {
+        display: block;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        padding: 4rem 2rem;
+      }
+
+      .loading.active {
+        display: block;
+      }
+
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid var(--border);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .portfolio-header {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+      }
+
+      .portfolio-value {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+      }
+
+      .portfolio-change {
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .positive {
+        color: var(--success);
+      }
+
+      .negative {
+        color: var(--danger);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 2rem;
+      }
+
+      .stat-card {
+        background: var(--secondary-bg);
+        padding: 1.5rem;
+        border-radius: 8px;
+      }
+
+      .stat-label {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .stat-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+
+      .chart-container {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+      }
+
+      .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+      }
+
+      .chart-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+
+      .time-filters {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .time-filter {
+        padding: 0.5rem 1rem;
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .time-filter.active {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+      }
+
+      .chart {
+        height: 300px;
+        position: relative;
+      }
+
+      .positions-section {
+        margin-top: 2rem;
+      }
+
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+      }
+
+      .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+
+      .filter-controls {
+        display: flex;
+        gap: 1rem;
+      }
+
+      .filter-select {
+        padding: 0.5rem 1rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .positions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .position-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid var(--border);
+        transition:
+          transform 0.2s,
+          border-color 0.2s;
+        cursor: pointer;
+      }
+
+      .position-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--accent);
+      }
+
+      .position-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 1rem;
+      }
+
+      .position-info {
+        flex: 1;
+      }
+
+      .position-pair {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+      }
+
+      .position-protocol {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .chain-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        background: var(--secondary-bg);
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      .position-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .metric {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .metric-label {
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .metric-value {
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal.active {
+        display: flex;
+      }
+
+      .modal-content {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 500px;
+        width: 90%;
+        border: 1px solid var(--border);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+      }
+
+      .modal-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+
+      .close-btn {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: all 0.2s;
+      }
+
+      .close-btn:hover {
+        background: var(--secondary-bg);
+        color: var(--text-primary);
+      }
+
+      .wallet-options {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .wallet-option {
+        padding: 1rem;
+        background: var(--secondary-bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .wallet-option:hover {
+        border-color: var(--accent);
+        background: var(--card-bg);
+      }
+
+      .wallet-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--accent);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-secondary);
+      }
+
+      .empty-state h3 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+      }
+
+      .refresh-indicator {
+        display: none;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+      }
+
+      .refresh-indicator.active {
+        display: flex;
+      }
+
+      .refresh-dot {
+        width: 8px;
+        height: 8px;
+        background: var(--success);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .navbar {
+          padding: 1rem;
+        }
+
+        .nav-links {
+          display: none;
+        }
+
+        .landing h1 {
+          font-size: 2rem;
+        }
+
+        .landing p {
+          font-size: 1rem;
+        }
+
+        .features {
+          grid-template-columns: 1fr;
+        }
+
+        .portfolio-value {
+          font-size: 2rem;
+        }
+
+        .positions-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      .skeleton {
+        background: linear-gradient(
+          90deg,
+          var(--card-bg) 25%,
+          var(--secondary-bg) 50%,
+          var(--card-bg) 75%
+        );
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+      }
+
+      @keyframes loading {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
+      }
+
+      .skeleton-text {
+        height: 20px;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+      }
+
+      .skeleton-title {
+        height: 32px;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="logo">
+        <div class="logo-icon">⚡</div>
+        <span>AstraDeFi</span>
+      </div>
+      <div class="nav-links">
+        <a href="#overview">Overview</a>
+        <a href="#history">History</a>
+        <a href="#settings">Settings</a>
+      </div>
+      <button class="btn btn-primary" id="connectWalletBtn">Connect Wallet</button>
+    </nav>
+
+    <div id="landingPage" class="landing">
+      <h1>Your Multi-Chain DeFi Portfolio, Unified</h1>
+      <p>
+        Monitor all your DeFi positions across Ethereum, Arbitrum, Optimism, Polygon, and Base from
+        a single, lightning-fast dashboard. Make informed capital allocation decisions with
+        real-time data.
+      </p>
+      <button class="btn btn-primary" id="landingConnectBtn">Connect Wallet to Get Started</button>
+
+      <div class="features">
+        <div class="feature-card">
+          <h3>⚡ Lightning Fast</h3>
+          <p>
+            Sub-second load times with Redis-backed caching. Your portfolio data, instantly
+            available.
+          </p>
+        </div>
+        <div class="feature-card">
+          <h3>🔗 Multi-Chain</h3>
+          <p>Track positions across Ethereum, Arbitrum, Optimism, Polygon, and Base in one view.</p>
+        </div>
+        <div class="feature-card">
+          <h3>📊 Real-Time Data</h3>
+          <p>Live price feeds and APY tracking so you never miss an opportunity.</p>
+        </div>
+        <div class="feature-card">
+          <h3>📈 Historical Insights</h3>
+          <p>Track your portfolio performance over time with detailed charts and analytics.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="loadingPage" class="loading">
+      <div class="spinner"></div>
+      <h2 id="loadingText">Connecting wallet...</h2>
+      <p style="color: var(--text-secondary); margin-top: 1rem">This should only take a moment</p>
+    </div>
+
+    <div id="dashboardPage" class="dashboard">
+      <div class="portfolio-header">
+        <div style="display: flex; justify-content: space-between; align-items: start">
+          <div>
+            <div class="portfolio-value" id="totalValue">$0.00</div>
+            <div class="portfolio-change" id="portfolioChange">
+              <span>+$0.00 (0.00%)</span>
+              <span style="font-size: 0.875rem; color: var(--text-secondary)">24h</span>
+            </div>
+          </div>
+          <div class="refresh-indicator active">
+            <div class="refresh-dot"></div>
+            <span>Live</span>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Positions</div>
+            <div class="stat-value" id="totalPositions">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Active Chains</div>
+            <div class="stat-value" id="activeChains">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Avg APY</div>
+            <div class="stat-value positive" id="avgAPY">0%</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">24h Volume</div>
+            <div class="stat-value" id="volume24h">$0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <div class="chart-header">
+          <div class="chart-title">Portfolio Value</div>
+          <div class="time-filters">
+            <button class="time-filter" data-period="7d">7D</button>
+            <button class="time-filter active" data-period="30d">30D</button>
+            <button class="time-filter" data-period="90d">90D</button>
+            <button class="time-filter" data-period="1y">1Y</button>
+          </div>
+        </div>
+        <div class="chart">
+          <canvas id="portfolioChart"></canvas>
+        </div>
+      </div>
+
+      <div class="positions-section">
+        <div class="section-header">
+          <div class="section-title">Your Positions</div>
+          <div class="filter-controls">
+            <select class="filter-select" id="chainFilter">
+              <option value="all">All Chains</option>
+              <option value="ethereum">Ethereum</option>
+              <option value="arbitrum">Arbitrum</option>
+              <option value="optimism">Optimism</option>
+              <option value="polygon">Polygon</option>
+              <option value="base">Base</option>
+            </select>
+            <select class="filter-select" id="protocolFilter">
+              <option value="all">All Protocols</option>
+              <option value="uniswap">Uniswap</option>
+              <option value="curve">Curve</option>
+              <option value="aave">Aave</option>
+              <option value="gmx">GMX</option>
+            </select>
+          </div>
+        </div>
+        <div class="positions-grid" id="positionsGrid"></div>
+      </div>
+    </div>
+
+    <div id="walletModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title">Connect Wallet</div>
+          <button class="close-btn" id="closeModal">&times;</button>
+        </div>
+        <div class="wallet-options">
+          <div class="wallet-option" data-wallet="metamask">
+            <div class="wallet-icon">🦊</div>
+            <div>
+              <div style="font-weight: 600">MetaMask</div>
+              <div style="font-size: 0.875rem; color: var(--text-secondary)">
+                Connect with MetaMask
+              </div>
+            </div>
+          </div>
+          <div class="wallet-option" data-wallet="walletconnect">
+            <div class="wallet-icon">🔗</div>
+            <div>
+              <div style="font-weight: 600">WalletConnect</div>
+              <div style="font-size: 0.875rem; color: var(--text-secondary)">
+                Scan with mobile wallet
+              </div>
+            </div>
+          </div>
+          <div class="wallet-option" data-wallet="demo">
+            <div class="wallet-icon">👁️</div>
+            <div>
+              <div style="font-weight: 600">Demo Mode</div>
+              <div style="font-size: 0.875rem; color: var(--text-secondary)">
+                View sample portfolio
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Mock data for demo
+      const mockPositions = [
+        {
+          id: 1,
+          pair: 'ETH-USDC',
+          protocol: 'Uniswap V3',
+          chain: 'ethereum',
+          value: 24567.89,
+          change24h: 2.34,
+          apy: 12.4,
+          tvl: 1234567,
+          fees24h: 45.67,
+        },
+        {
+          id: 2,
+          pair: 'USDC-USDT',
+          protocol: 'Curve',
+          chain: 'ethereum',
+          value: 15234.5,
+          change24h: 0.12,
+          apy: 8.2,
+          tvl: 987654,
+          fees24h: 12.34,
+        },
+        {
+          id: 3,
+          pair: 'ETH-USDC',
+          protocol: 'GMX',
+          chain: 'arbitrum',
+          value: 8765.43,
+          change24h: 14.2,
+          apy: 18.7,
+          tvl: 456789,
+          fees24h: 67.89,
+        },
+        {
+          id: 4,
+          pair: 'WBTC-ETH',
+          protocol: 'Uniswap V3',
+          chain: 'optimism',
+          value: 12345.67,
+          change24h: -1.23,
+          apy: 15.3,
+          tvl: 789012,
+          fees24h: 34.56,
+        },
+        {
+          id: 5,
+          pair: 'MATIC-USDC',
+          protocol: 'Uniswap V3',
+          chain: 'polygon',
+          value: 5678.9,
+          change24h: 3.45,
+          apy: 22.1,
+          tvl: 234567,
+          fees24h: 23.45,
+        },
+        {
+          id: 6,
+          pair: 'ETH-USDC',
+          protocol: 'Aerodrome',
+          chain: 'base',
+          value: 9876.54,
+          change24h: 1.89,
+          apy: 16.8,
+          tvl: 345678,
+          fees24h: 28.9,
+        },
+      ];
+
+      let filteredPositions = [...mockPositions];
+
+      // DOM elements
+      const landingPage = document.getElementById('landingPage');
+      const loadingPage = document.getElementById('loadingPage');
+      const dashboardPage = document.getElementById('dashboardPage');
+      const walletModal = document.getElementById('walletModal');
+      const connectWalletBtn = document.getElementById('connectWalletBtn');
+      const landingConnectBtn = document.getElementById('landingConnectBtn');
+      const closeModal = document.getElementById('closeModal');
+      const loadingText = document.getElementById('loadingText');
+
+      // Wallet connection handlers
+      connectWalletBtn.addEventListener('click', () => {
+        walletModal.classList.add('active');
+      });
+
+      landingConnectBtn.addEventListener('click', () => {
+        walletModal.classList.add('active');
+      });
+
+      closeModal.addEventListener('click', () => {
+        walletModal.classList.remove('active');
+      });
+
+      walletModal.addEventListener('click', (e) => {
+        if (e.target === walletModal) {
+          walletModal.classList.remove('active');
+        }
+      });
+
+      // Wallet option selection
+      document.querySelectorAll('.wallet-option').forEach((option) => {
+        option.addEventListener('click', async () => {
+          const wallet = option.dataset.wallet;
+          walletModal.classList.remove('active');
+          await connectWallet(wallet);
+        });
+      });
+
+      // Connect wallet simulation
+      async function connectWallet(walletType) {
+        landingPage.style.display = 'none';
+        dashboardPage.classList.remove('active');
+        loadingPage.classList.add('active');
+
+        const steps = [
+          'Connecting wallet...',
+          'Scanning chains...',
+          'Fetching positions...',
+          'Loading prices...',
+          'Almost there...',
+        ];
+
+        for (let i = 0; i < steps.length; i++) {
+          loadingText.textContent = steps[i];
+          await new Promise((resolve) => setTimeout(resolve, 600));
+        }
+
+        loadingPage.classList.remove('active');
+        dashboardPage.classList.add('active');
+        connectWalletBtn.textContent = '0x742d...3f4a';
+        connectWalletBtn.classList.remove('btn-primary');
+        connectWalletBtn.classList.add('btn-secondary');
+
+        initializeDashboard();
+      }
+
+      // Initialize dashboard
+      function initializeDashboard() {
+        updatePortfolioStats();
+        renderPositions();
+        initializeChart();
+        startPriceUpdates();
+      }
+
+      // Update portfolio statistics
+      function updatePortfolioStats() {
+        const totalValue = mockPositions.reduce((sum, pos) => sum + pos.value, 0);
+        const totalChange = mockPositions.reduce(
+          (sum, pos) => sum + (pos.value * pos.change24h) / 100,
+          0,
+        );
+        const changePercent = (totalChange / totalValue) * 100;
+        const avgAPY = mockPositions.reduce((sum, pos) => sum + pos.apy, 0) / mockPositions.length;
+        const uniqueChains = new Set(mockPositions.map((p) => p.chain)).size;
+        const total24hVolume = mockPositions.reduce(
+          (sum, pos) => sum + ((pos.fees24h * 365) / pos.apy) * 100,
+          0,
+        );
+
+        document.getElementById('totalValue').textContent =
+          `$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        const changeEl = document.getElementById('portfolioChange');
+        const changeSign = changePercent >= 0 ? '+' : '';
+        changeEl.innerHTML = `
+                <span class="${changePercent >= 0 ? 'positive' : 'negative'}">
+                    ${changeSign}$${Math.abs(totalChange).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} 
+                    (${changeSign}${changePercent.toFixed(2)}%)
+                </span>
+                <span style="font-size: 0.875rem; color: var(--text-secondary);">24h</span>
+            `;
+
+        document.getElementById('totalPositions').textContent = mockPositions.length;
+        document.getElementById('activeChains').textContent = uniqueChains;
+        document.getElementById('avgAPY').textContent = `${avgAPY.toFixed(1)}%`;
+        document.getElementById('volume24h').textContent =
+          `$${total24hVolume.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+      }
+
+      // Render positions
+      function renderPositions() {
+        const grid = document.getElementById('positionsGrid');
+        grid.innerHTML = '';
+
+        filteredPositions.forEach((position) => {
+          const card = document.createElement('div');
+          card.className = 'position-card';
+
+          const changeClass = position.change24h >= 0 ? 'positive' : 'negative';
+          const changeSign = position.change24h >= 0 ? '+' : '';
+
+          card.innerHTML = `
+                    <div class="position-header">
+                        <div class="position-info">
+                            <div class="position-pair">${position.pair}</div>
+                            <div class="position-protocol">
+                                <span>${position.protocol}</span>
+                                <span class="chain-badge">${position.chain.charAt(0).toUpperCase() + position.chain.slice(1)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="position-metrics">
+                        <div class="metric">
+                            <div class="metric-label">Current Value</div>
+                            <div class="metric-value">$${position.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">24h Change</div>
+                            <div class="metric-value ${changeClass}">${changeSign}${position.change24h.toFixed(2)}%</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Current APY</div>
+                            <div class="metric-value positive">${position.apy.toFixed(1)}%</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">24h Fees</div>
+                            <div class="metric-value">$${position.fees24h.toFixed(2)}</div>
+                        </div>
+                    </div>
+                `;
+
+          card.addEventListener('click', () => {
+            alert(
+              `Position details for ${position.pair} on ${position.protocol}\n\nThis would open a detailed view with historical performance, IL tracking, and pool-specific analytics.`,
+            );
+          });
+
+          grid.appendChild(card);
+        });
+      }
+
+      // Filter handlers
+      document.getElementById('chainFilter').addEventListener('change', (e) => {
+        const chain = e.target.value;
+        filteredPositions =
+          chain === 'all' ? [...mockPositions] : mockPositions.filter((p) => p.chain === chain);
+        renderPositions();
+      });
+
+      document.getElementById('protocolFilter').addEventListener('change', (e) => {
+        const protocol = e.target.value;
+        filteredPositions =
+          protocol === 'all'
+            ? [...mockPositions]
+            : mockPositions.filter((p) => p.protocol.toLowerCase().includes(protocol));
+        renderPositions();
+      });
+
+      // Initialize chart
+      function initializeChart() {
+        const canvas = document.getElementById('portfolioChart');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas size
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = 300;
+
+        // Generate mock historical data
+        const days = 30;
+        const data = [];
+        let baseValue = 70000;
+
+        for (let i = 0; i < days; i++) {
+          baseValue += (Math.random() - 0.45) * 2000;
+          data.push(baseValue);
+        }
+
+        // Draw chart
+        const padding = 40;
+        const width = canvas.width - padding * 2;
+        const height = canvas.height - padding * 2;
+        const max = Math.max(...data);
+        const min = Math.min(...data);
+        const range = max - min;
+
+        // Draw grid lines
+        ctx.strokeStyle = '#2d3348';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 5; i++) {
+          const y = padding + (height / 5) * i;
+          ctx.beginPath();
+          ctx.moveTo(padding, y);
+          ctx.lineTo(canvas.width - padding, y);
+          ctx.stroke();
+        }
+
+        // Draw line
+        ctx.strokeStyle = '#6366f1';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+
+        data.forEach((value, index) => {
+          const x = padding + (width / (days - 1)) * index;
+          const y = padding + height - ((value - min) / range) * height;
+
+          if (index === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+
+        ctx.stroke();
+
+        // Draw gradient fill
+        const gradient = ctx.createLinearGradient(0, padding, 0, canvas.height - padding);
+        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
+        gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+        ctx.fillStyle = gradient;
+        ctx.lineTo(canvas.width - padding, canvas.height - padding);
+        ctx.lineTo(padding, canvas.height - padding);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Time filter handlers
+      document.querySelectorAll('.time-filter').forEach((filter) => {
+        filter.addEventListener('click', (e) => {
+          document.querySelectorAll('.time-filter').forEach((f) => f.classList.remove('active'));
+          e.target.classList.add('active');
+          initializeChart(); // Re-render with new time period
+        });
+      });
+
+      // Simulate live price updates
+      function startPriceUpdates() {
+        setInterval(() => {
+          mockPositions.forEach((position) => {
+            const change = (Math.random() - 0.5) * 0.5;
+            position.value *= 1 + change / 100;
+            position.change24h += (Math.random() - 0.5) * 0.3;
+          });
+          updatePortfolioStats();
+          renderPositions();
+        }, 10000); // Update every 10 seconds for demo
+      }
+
+      // Handle window resize
+      window.addEventListener('resize', () => {
+        if (dashboardPage.classList.contains('active')) {
+          initializeChart();
+        }
+      });
+    </script>
+  </body>
+</html>

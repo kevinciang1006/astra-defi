@@ -1,0 +1,52 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      - DATABASE_URL=mysql://root:password@db:3306/astra_defi
+      - REDIS_URL=redis://cache:6379
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: astra_defi
+    ports:
+      - '3306:3306'
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-uroot', '-ppassword']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  cache:
+    image: redis:alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - cache_data:/data
+
+volumes:
+  db_data:
+  cache_data:

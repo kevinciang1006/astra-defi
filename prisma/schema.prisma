@@ -1,0 +1,67 @@
+// AstraDeFi Prisma Schema
+// MySQL database schema for portfolio tracking
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - represents a connected wallet
+model User {
+  id        String   @id @default(uuid())
+  address   String   @unique @db.VarChar(42) // Ethereum address format
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // User settings stored as JSON (e.g., { hideSmallBalances: true, theme: "dark" })
+  settings Json? @default("{}")
+
+  // Relations
+  snapshots PortfolioSnapshot[]
+
+  @@index([address])
+}
+
+// Portfolio snapshot - daily capture of portfolio value
+model PortfolioSnapshot {
+  id        String   @id @default(uuid())
+  userId    String
+  timestamp DateTime @default(now())
+
+  // Total portfolio value in USD with high precision for crypto
+  totalValueUsd Decimal @db.Decimal(24, 8)
+
+  // Chain breakdown stored as JSON: { "ethereum": 1000.50, "arbitrum": 500.25 }
+  breakdown Json
+
+  // Relation
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp(sort: Desc)])
+}
+
+// Token price cache - reduces external API calls
+model TokenPrice {
+  // Composite key format: "chainId:contractAddress" (e.g., "1:0xA0b86991...")
+  id String @id @db.VarChar(100)
+
+  chainId  Int
+  address  String @db.VarChar(42)
+  symbol   String @db.VarChar(20)
+  name     String @db.VarChar(100)
+  decimals Int    @default(18)
+  logoUrl  String? @db.VarChar(500)
+
+  // Price in USD with high precision
+  priceUsd Decimal @db.Decimal(24, 8)
+
+  // Timestamps
+  updatedAt DateTime @updatedAt
+
+  @@index([symbol])
+  @@index([chainId, address])
+}
