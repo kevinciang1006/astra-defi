@@ -1,7 +1,20 @@
 'use client';
 
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowUpDown, ArrowUp, ArrowDown, Coins } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import {
   formatUsd,
   formatPercent,
@@ -48,6 +61,19 @@ export function AssetList({ assets, isLoading }: AssetListProps) {
     }
   });
 
+const getSortIcon = (
+    field: SortField,
+    currentSortField: SortField,
+    direction: SortDirection
+  ) => {
+    if (currentSortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1" />;
+    return direction === 'asc' ? (
+      <ArrowUp className="h-3 w-3 ml-1" />
+    ) : (
+      <ArrowDown className="h-3 w-3 ml-1" />
+    );
+  };
+
   if (isLoading) {
     return <AssetListSkeleton />;
   }
@@ -56,118 +82,165 @@ export function AssetList({ assets, isLoading }: AssetListProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Assets</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Coins className="h-5 w-5" />
+            Assets
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-muted-foreground py-8">
-            No assets found in this wallet
-          </p>
+          <div className="text-center py-12">
+            <Coins className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No assets found in this wallet</p>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Assets ({assets.length})</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                  <button
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.1 }}
+    >
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Coins className="h-5 w-5" />
+            Assets
+            <Badge variant="secondary" className="ml-2">
+              {assets.length}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[200px]">
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleSort('name')}
-                    className="hover:text-foreground transition-colors"
+                    className="-ml-3 h-8 hover:bg-transparent"
                   >
-                    Asset {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </button>
-                </th>
-                <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                  Chain
-                </th>
-                <th className="text-right p-4 text-sm font-medium text-muted-foreground">
-                  Balance
-                </th>
-                <th className="text-right p-4 text-sm font-medium text-muted-foreground">
-                  Price
-                </th>
-                <th className="text-right p-4 text-sm font-medium text-muted-foreground">
-                  <button
+                    Asset
+                    {getSortIcon('name', sortField, sortDirection)}
+                  </Button>
+                </TableHead>
+                <TableHead>Chain</TableHead>
+                <TableHead className="text-right">Balance</TableHead>
+                <TableHead className="text-right">Price</TableHead>
+                <TableHead className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleSort('change')}
-                    className="hover:text-foreground transition-colors"
+                    className="-mr-3 h-8 hover:bg-transparent"
                   >
-                    24h {sortField === 'change' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </button>
-                </th>
-                <th className="text-right p-4 text-sm font-medium text-muted-foreground">
-                  <button
+                    24h
+                    {getSortIcon('change', sortField, sortDirection)}
+                  </Button>
+                </TableHead>
+                <TableHead className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleSort('value')}
-                    className="hover:text-foreground transition-colors"
+                    className="-mr-3 h-8 hover:bg-transparent"
                   >
-                    Value {sortField === 'value' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </button>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedAssets.map((asset, index) => (
-                <AssetRow key={`${asset.chainId}-${asset.address}-${index}`} asset={asset} />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
+                    Value
+                    {getSortIcon('value', sortField, sortDirection)}
+                  </Button>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <AnimatePresence mode="popLayout">
+                {sortedAssets.map((asset, index) => (
+                  <AssetRow
+                    key={`${asset.chainId}-${asset.address}-${index}`}
+                    asset={asset}
+                    index={index}
+                  />
+                ))}
+              </AnimatePresence>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
-function AssetRow({ asset }: { asset: AssetPosition }) {
+interface AssetRowProps {
+  asset: AssetPosition;
+  index: number;
+}
+
+function AssetRow({ asset, index }: AssetRowProps) {
   const changeColor = getChangeColor(asset.priceChange24h);
+  const isPositive = (asset.priceChange24h ?? 0) >= 0;
 
   return (
-    <tr className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-      <td className="p-4">
+    <motion.tr
+      layout
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      transition={{ duration: 0.2, delay: index * 0.03 }}
+      className="border-b transition-colors hover:bg-muted/50"
+    >
+      <TableCell className="font-medium">
         <div className="flex items-center gap-3">
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-            style={{ backgroundColor: asset.chainColor + '33', color: asset.chainColor }}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+            style={{
+              backgroundColor: asset.chainColor + '20',
+              color: asset.chainColor,
+            }}
           >
-            {asset.symbol.slice(0, 2)}
+            {asset.symbol.slice(0, 2).toUpperCase()}
           </div>
-          <div>
-            <p className="font-medium text-foreground">{asset.symbol}</p>
-            <p className="text-xs text-muted-foreground">{asset.name}</p>
+          <div className="min-w-0">
+            <p className="font-medium truncate">{asset.symbol}</p>
+            <p className="text-xs text-muted-foreground truncate">{asset.name}</p>
           </div>
         </div>
-      </td>
-      <td className="p-4">
-        <span
-          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-          style={{ backgroundColor: asset.chainColor + '22', color: asset.chainColor }}
+      </TableCell>
+      <TableCell>
+        <Badge
+          variant="outline"
+          className="font-normal"
+          style={{
+            borderColor: asset.chainColor + '50',
+            backgroundColor: asset.chainColor + '10',
+            color: asset.chainColor,
+          }}
         >
           {asset.chainName}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-right font-mono text-sm">
+        {formatTokenBalance(asset.formattedBalance)}
+      </TableCell>
+      <TableCell className="text-right text-sm text-muted-foreground">
+        {asset.priceUsd > 0 ? formatUsd(asset.priceUsd) : '--'}
+      </TableCell>
+      <TableCell className={`text-right text-sm font-medium ${changeColor}`}>
+        <span className="flex items-center justify-end gap-1">
+          {isPositive ? (
+            <ArrowUp className="h-3 w-3" />
+          ) : (
+            <ArrowDown className="h-3 w-3" />
+          )}
+          {formatPercent(Math.abs(asset.priceChange24h ?? 0))}
         </span>
-      </td>
-      <td className="p-4 text-right">
-        <span className="font-mono text-sm">
-          {formatTokenBalance(asset.formattedBalance)}
-        </span>
-      </td>
-      <td className="p-4 text-right">
-        <span className="text-sm text-muted-foreground">
-          {asset.priceUsd > 0 ? formatUsd(asset.priceUsd) : '--'}
-        </span>
-      </td>
-      <td className={`p-4 text-right text-sm ${changeColor}`}>
-        {formatPercent(asset.priceChange24h)}
-      </td>
-      <td className="p-4 text-right">
-        <span className="font-medium">{formatUsd(asset.valueUsd)}</span>
-      </td>
-    </tr>
+      </TableCell>
+      <TableCell className="text-right font-medium">
+        {formatUsd(asset.valueUsd)}
+      </TableCell>
+    </motion.tr>
   );
 }
 
@@ -175,19 +248,27 @@ function AssetListSkeleton() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Assets</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Coins className="h-5 w-5" />
+          Assets
+        </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="animate-pulse">
+        <div className="border-t">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex items-center gap-4 p-4 border-b border-border">
-              <div className="w-8 h-8 bg-muted rounded-full" />
-              <div className="flex-1">
-                <div className="h-4 w-20 bg-muted rounded mb-1" />
-                <div className="h-3 w-32 bg-muted rounded" />
+            <div
+              key={i}
+              className="flex items-center gap-4 p-4 border-b last:border-0"
+            >
+              <Skeleton className="h-9 w-9 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-3 w-32" />
               </div>
-              <div className="h-4 w-16 bg-muted rounded" />
-              <div className="h-4 w-20 bg-muted rounded" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-20" />
             </div>
           ))}
         </div>

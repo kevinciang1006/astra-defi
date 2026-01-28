@@ -1,6 +1,8 @@
 'use client';
 
 import { ConnectButton as RainbowConnectButton } from '@rainbow-me/rainbowkit';
+import { Wallet, AlertTriangle, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export function ConnectButton() {
   return (
@@ -30,34 +32,33 @@ export function ConnectButton() {
             {(() => {
               if (!connected) {
                 return (
-                  <button
-                    onClick={openConnectModal}
-                    type="button"
-                    className="px-4 py-2 font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-                  >
+                  <Button onClick={openConnectModal} className="gap-2">
+                    <Wallet className="h-4 w-4" />
                     Connect Wallet
-                  </button>
+                  </Button>
                 );
               }
 
               if (chain.unsupported) {
                 return (
-                  <button
+                  <Button
                     onClick={openChainModal}
-                    type="button"
-                    className="px-4 py-2 font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                    variant="destructive"
+                    className="gap-2"
                   >
+                    <AlertTriangle className="h-4 w-4" />
                     Wrong network
-                  </button>
+                  </Button>
                 );
               }
 
               return (
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
                     onClick={openChainModal}
-                    type="button"
-                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
+                    variant="secondary"
+                    size="sm"
+                    className="gap-2"
                   >
                     {chain.hasIcon && (
                       <div
@@ -65,6 +66,7 @@ export function ConnectButton() {
                         style={{ background: chain.iconBackground }}
                       >
                         {chain.iconUrl && (
+                          /* eslint-disable-next-line @next/next/no-img-element */
                           <img
                             alt={chain.name ?? 'Chain icon'}
                             src={chain.iconUrl}
@@ -74,16 +76,21 @@ export function ConnectButton() {
                       </div>
                     )}
                     {chain.name}
-                  </button>
+                    <ChevronDown className="h-3 w-3 opacity-50" />
+                  </Button>
 
-                  <button
+                  <Button
                     onClick={openAccountModal}
-                    type="button"
-                    className="px-3 py-2 text-sm font-medium bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
+                    variant="secondary"
+                    size="sm"
                   >
                     {account.displayName}
-                    {account.displayBalance ? ` (${account.displayBalance})` : ''}
-                  </button>
+                    {account.displayBalance && (
+                      <span className="ml-1 text-muted-foreground">
+                        ({account.displayBalance})
+                      </span>
+                    )}
+                  </Button>
                 </div>
               );
             })()}
