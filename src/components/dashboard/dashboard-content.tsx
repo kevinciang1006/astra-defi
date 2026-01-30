@@ -7,7 +7,7 @@ import { Play, X, Zap, Link2, BarChart3 } from 'lucide-react';
 import { usePortfolio } from '@/hooks/use-portfolio';
 import { getDemoPortfolio } from '@/lib/demo';
 import { ConnectButton } from '@/components/wallet/connect-button';
-import { PortfolioSummary, AssetList, ChainBreakdown } from '@/components/dashboard';
+import { PortfolioSummary, AssetList, ChainBreakdown, PortfolioChart } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -28,11 +28,37 @@ export function DashboardContent() {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">A</span>
+          <div className="flex items-center gap-6">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">A</span>
+              </div>
+              <span className="font-bold text-xl gradient-text">AstraDeFi</span>
             </div>
-            <span className="font-bold text-xl text-foreground">AstraDeFi</span>
+
+            {/* Nav Links - Hidden on mobile */}
+            <nav className="hidden md:flex items-center gap-6">
+              <a
+                href="#overview"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Overview
+              </a>
+              <a
+                href="#history"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                History
+              </a>
+              <a
+                href="#settings"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Settings
+              </a>
+            </nav>
+
             {isDemoMode && (
               <Badge variant="warning" className="ml-2">
                 Demo Mode
@@ -104,6 +130,12 @@ export function DashboardContent() {
 
             {/* Portfolio Summary */}
             <PortfolioSummary portfolio={displayPortfolio ?? null} isLoading={displayLoading} />
+
+            {/* Portfolio Chart */}
+            <PortfolioChart
+              totalValue={displayPortfolio?.totalValueUsd ?? 0}
+              isLoading={displayLoading}
+            />
 
             {/* Two Column Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

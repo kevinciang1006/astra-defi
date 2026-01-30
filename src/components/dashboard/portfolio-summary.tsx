@@ -1,11 +1,10 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Wallet, Layers, Clock } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TrendingUp, TrendingDown, Wallet, Layers, Activity, BarChart3 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import { formatUsd, formatPercent, getChangeColor } from '@/lib/utils/format';
+import { formatUsd, getChangeColor } from '@/lib/utils/format';
 import type { Portfolio } from '@/lib/services';
 
 interface PortfolioSummaryProps {
@@ -20,7 +19,7 @@ export function PortfolioSummary({ portfolio, isLoading }: PortfolioSummaryProps
 
   if (!portfolio) {
     return (
-      <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+      <Card className="border-border">
         <CardContent className="py-12">
           <div className="text-center">
             <Wallet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -36,63 +35,73 @@ export function PortfolioSummary({ portfolio, isLoading }: PortfolioSummaryProps
   const isPositive = portfolio.totalChange24hPercent >= 0;
   const TrendIcon = isPositive ? TrendingUp : TrendingDown;
 
+  // Calculate mock APY (average of 8-15% for demo purposes)
+  const avgApy = 12.4;
+  // Calculate mock 24h volume based on portfolio value
+  const volume24h = portfolio.totalValueUsd * 0.15;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 overflow-hidden">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-            <Wallet className="h-4 w-4" />
-            Total Portfolio Value
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-baseline gap-4">
-            <motion.span
-              className="text-4xl font-bold tracking-tight"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-            >
-              {formatUsd(portfolio.totalValueUsd)}
-            </motion.span>
-            {portfolio.totalChange24hPercent !== 0 && (
-              <Badge variant={isPositive ? 'success' : 'destructive'} className="gap-1">
-                <TrendIcon className="h-3 w-3" />
-                {formatPercent(Math.abs(portfolio.totalChange24hPercent))}
-              </Badge>
-            )}
+      <Card className="border-border overflow-hidden">
+        <CardContent className="pt-6 space-y-6">
+          {/* Header with Live indicator */}
+          <div className="flex justify-between items-start">
+            <div>
+              <motion.div
+                className="text-5xl font-bold tracking-tight"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                {formatUsd(portfolio.totalValueUsd)}
+              </motion.div>
+
+              {/* 24h Change */}
+              <div className={`flex items-center gap-2 mt-2 text-lg ${getChangeColor(portfolio.totalChange24hPercent)}`}>
+                <span className="flex items-center gap-1">
+                  <TrendIcon className="h-4 w-4" />
+                  {isPositive ? '+' : ''}
+                  {formatUsd(Math.abs(portfolio.totalChange24hUsd))}
+                  {' '}
+                  ({isPositive ? '+' : ''}{portfolio.totalChange24hPercent.toFixed(2)}%)
+                </span>
+                <span className="text-sm text-muted-foreground">24h</span>
+              </div>
+            </div>
+
+            {/* Live Indicator */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse-live" />
+              <span>Live</span>
+            </div>
           </div>
 
-          {portfolio.totalChange24hUsd !== 0 && (
-            <p className={`text-sm ${getChangeColor(portfolio.totalChange24hPercent)}`}>
-              {isPositive ? '+' : ''}
-              {formatUsd(portfolio.totalChange24hUsd)} today
-            </p>
-          )}
-
+          {/* Stats Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-border">
-            <Stat
-              icon={<Layers className="h-3.5 w-3.5" />}
-              label="Assets"
+            <StatCard
+              icon={<Layers className="h-4 w-4" />}
+              label="Total Positions"
               value={portfolio.assets.length.toString()}
             />
-            <Stat
-              icon={<Layers className="h-3.5 w-3.5" />}
-              label="Chains"
+            <StatCard
+              icon={<Activity className="h-4 w-4" />}
+              label="Active Chains"
               value={portfolio.chainSummaries.length.toString()}
             />
-            <Stat
-              label="Top Chain"
-              value={portfolio.chainSummaries[0]?.chainName ?? '--'}
+            <StatCard
+              icon={<TrendingUp className="h-4 w-4" />}
+              label="Avg APY"
+              value={`${avgApy.toFixed(1)}%`}
+              valueClassName="text-success"
             />
-            <Stat
-              icon={<Clock className="h-3.5 w-3.5" />}
-              label="Last Updated"
-              value={formatTime(portfolio.lastUpdated)}
+            <StatCard
+              icon={<BarChart3 className="h-4 w-4" />}
+              label="24h Volume"
+              value={formatUsd(volume24h, { compact: true })}
             />
           </div>
         </CardContent>
@@ -101,49 +110,41 @@ export function PortfolioSummary({ portfolio, isLoading }: PortfolioSummaryProps
   );
 }
 
-interface StatProps {
+interface StatCardProps {
   icon?: React.ReactNode;
   label: string;
   value: string;
+  valueClassName?: string;
 }
 
-function Stat({ icon, label, value }: StatProps) {
+function StatCard({ icon, label, value, valueClassName = '' }: StatCardProps) {
   return (
-    <div className="space-y-1">
-      <p className="text-xs text-muted-foreground flex items-center gap-1">
+    <div className="bg-secondary/50 rounded-lg p-4">
+      <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1">
         {icon}
         {label}
       </p>
-      <p className="text-sm font-medium">{value}</p>
+      <p className={`text-xl font-semibold ${valueClassName}`}>{value}</p>
     </div>
   );
 }
 
-function formatTime(isoString: string): string {
-  const date = new Date(isoString);
-  return date.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 function PortfolioSummarySkeleton() {
   return (
-    <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-      <CardHeader className="pb-2">
-        <Skeleton className="h-4 w-32" />
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex items-baseline gap-4">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-6 w-20" />
+    <Card className="border-border">
+      <CardContent className="pt-6 space-y-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <Skeleton className="h-12 w-56" />
+            <Skeleton className="h-6 w-40 mt-2" />
+          </div>
+          <Skeleton className="h-5 w-16" />
         </div>
-        <Skeleton className="h-4 w-32" />
-        <div className="grid grid-cols-4 gap-4 pt-4 border-t border-border">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-border">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="space-y-1">
-              <Skeleton className="h-3 w-12" />
-              <Skeleton className="h-4 w-16" />
+            <div key={i} className="bg-secondary/50 rounded-lg p-4">
+              <Skeleton className="h-3 w-20 mb-2" />
+              <Skeleton className="h-6 w-12" />
             </div>
           ))}
         </div>

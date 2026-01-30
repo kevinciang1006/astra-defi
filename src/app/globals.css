@@ -32,6 +32,10 @@
 
   --radius: 0.5rem;
 
+  /* Success/Warning colors */
+  --success: 160 84% 39%;
+  --warning: 38 92% 50%;
+
   /* Chart colors */
   --chart-1: 220 70% 50%;
   --chart-2: 160 60% 45%;
@@ -40,42 +44,48 @@
   --chart-5: 340 75% 55%;
 }
 
-/* Dark mode variables (always active since we use class="dark") */
+/* Dark mode variables - matching prototype design */
 .dark {
-  --background: 224 71% 4%;
-  --foreground: 210 20% 98%;
+  /* Darker, richer backgrounds from prototype */
+  --background: 220 37% 6%;           /* #0a0e17 - primary bg */
+  --foreground: 220 14% 90%;          /* Light gray text */
 
-  --card: 224 71% 4%;
-  --card-foreground: 210 20% 98%;
+  --card: 223 35% 15%;                /* #1a1f35 - card bg */
+  --card-foreground: 220 14% 90%;
 
-  --popover: 224 71% 4%;
-  --popover-foreground: 210 20% 98%;
+  --popover: 223 35% 12%;             /* #141929 - secondary bg */
+  --popover-foreground: 220 14% 90%;
 
-  --primary: 210 100% 60%;
-  --primary-foreground: 220 9% 4%;
+  /* Indigo accent from prototype */
+  --primary: 239 84% 67%;             /* #6366f1 - accent */
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 215 28% 17%;
-  --secondary-foreground: 210 20% 98%;
+  --secondary: 223 35% 12%;           /* #141929 - secondary bg */
+  --secondary-foreground: 220 14% 90%;
 
-  --muted: 215 28% 17%;
-  --muted-foreground: 217 11% 65%;
+  --muted: 223 35% 12%;
+  --muted-foreground: 220 9% 60%;     /* #9ca3af - text secondary */
 
-  --accent: 215 28% 17%;
-  --accent-foreground: 210 20% 98%;
+  --accent: 239 84% 67%;              /* #6366f1 - accent */
+  --accent-foreground: 0 0% 100%;
 
-  --destructive: 0 62% 50%;
-  --destructive-foreground: 210 20% 98%;
+  --destructive: 0 84% 60%;           /* #ef4444 - danger */
+  --destructive-foreground: 0 0% 100%;
 
-  --border: 215 28% 17%;
-  --input: 215 28% 17%;
-  --ring: 216 12% 84%;
+  --border: 225 23% 23%;              /* #2d3348 - border */
+  --input: 225 23% 23%;
+  --ring: 239 84% 67%;
+
+  /* Success/Warning colors from prototype */
+  --success: 160 84% 39%;             /* #10b981 */
+  --warning: 38 92% 50%;              /* #f59e0b */
 
   /* Chart colors - vibrant for dark mode */
-  --chart-1: 220 70% 60%;
-  --chart-2: 160 60% 50%;
-  --chart-3: 30 80% 60%;
-  --chart-4: 280 65% 65%;
-  --chart-5: 340 75% 60%;
+  --chart-1: 239 84% 67%;             /* Indigo */
+  --chart-2: 160 84% 39%;             /* Green */
+  --chart-3: 38 92% 50%;              /* Amber */
+  --chart-4: 280 65% 65%;             /* Purple */
+  --chart-5: 340 75% 60%;             /* Pink */
 }
 
 /* Tailwind v4 theme integration */
@@ -97,6 +107,8 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -132,4 +144,49 @@ html {
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Live indicator pulsing animation */
+@keyframes pulse-live {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.animate-pulse-live {
+  animation: pulse-live 2s ease-in-out infinite;
+}
+
+/* Gradient text effect */
+.gradient-text {
+  background: linear-gradient(135deg, hsl(239 84% 67%), hsl(280 65% 65%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gradient background */
+.gradient-bg {
+  background: linear-gradient(135deg, hsl(239 84% 67%), hsl(280 65% 65%));
+}
+
+/* Success and warning text colors */
+.text-success {
+  color: hsl(160 84% 39%);
+}
+
+.text-warning {
+  color: hsl(38 92% 50%);
+}
+
+.text-danger {
+  color: hsl(0 84% 60%);
+}
+
+/* Background success */
+.bg-success {
+  background-color: hsl(160 84% 39%);
 }

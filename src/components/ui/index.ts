@@ -19,3 +19,4 @@ export {
   TableCell,
   TableCaption,
 } from './table';
+export { Select, type SelectProps } from './select';

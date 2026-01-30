@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowUpDown, ArrowUp, ArrowDown, Coins } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Coins, LayoutGrid, List } from 'lucide-react';
+import { PositionCards } from './position-cards';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import {
   Table,
@@ -15,6 +16,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 import {
   formatUsd,
   formatPercent,
@@ -30,10 +32,41 @@ interface AssetListProps {
 
 type SortField = 'value' | 'name' | 'change';
 type SortDirection = 'asc' | 'desc';
+type ViewMode = 'table' | 'cards';
 
 export function AssetList({ assets, isLoading }: AssetListProps) {
   const [sortField, setSortField] = useState<SortField>('value');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [chainFilter, setChainFilter] = useState<string>('all');
+  const [tokenFilter, setTokenFilter] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('cards'); // Default to cards like prototype
+
+  // Get unique chains for the filter dropdown
+  const chainOptions = useMemo(() => {
+    const chains = Array.from(new Set(assets.map((a) => a.chainName)));
+    return [
+      { label: 'All Chains', value: 'all' },
+      ...chains.map((chain) => ({ label: chain, value: chain })),
+    ];
+  }, [assets]);
+
+  // Get unique tokens for the filter dropdown
+  const tokenOptions = useMemo(() => {
+    const tokens = Array.from(new Set(assets.map((a) => a.symbol)));
+    return [
+      { label: 'All Tokens', value: 'all' },
+      ...tokens.map((token) => ({ label: token, value: token })),
+    ];
+  }, [assets]);
+
+  // Filter assets based on selected filters
+  const filteredAssets = useMemo(() => {
+    return assets.filter((asset) => {
+      if (chainFilter !== 'all' && asset.chainName !== chainFilter) return false;
+      if (tokenFilter !== 'all' && asset.symbol !== tokenFilter) return false;
+      return true;
+    });
+  }, [assets, chainFilter, tokenFilter]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -44,7 +77,7 @@ export function AssetList({ assets, isLoading }: AssetListProps) {
     }
   };
 
-  const sortedAssets = [...assets].sort((a, b) => {
+  const sortedAssets = [...filteredAssets].sort((a, b) => {
     const multiplier = sortDirection === 'asc' ? 1 : -1;
 
     switch (sortField) {
@@ -105,68 +138,106 @@ const getSortIcon = (
     >
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Coins className="h-5 w-5" />
-            Assets
-            <Badge variant="secondary" className="ml-2">
-              {assets.length}
-            </Badge>
-          </CardTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <CardTitle className="flex items-center gap-2">
+              <Coins className="h-5 w-5" />
+              Your Positions
+              <Badge variant="secondary" className="ml-2">
+                {filteredAssets.length}
+              </Badge>
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Select
+                options={chainOptions}
+                value={chainFilter}
+                onChange={(e) => setChainFilter(e.target.value)}
+                className="w-[140px]"
+              />
+              <Select
+                options={tokenOptions}
+                value={tokenFilter}
+                onChange={(e) => setTokenFilter(e.target.value)}
+                className="w-[140px]"
+              />
+              <div className="flex border border-border rounded-md overflow-hidden ml-2">
+                <Button
+                  variant={viewMode === 'cards' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('cards')}
+                  className="rounded-none h-9 px-3"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'table' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('table')}
+                  className="rounded-none h-9 px-3"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[200px]">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort('name')}
-                    className="-ml-3 h-8 hover:bg-transparent"
-                  >
-                    Asset
-                    {getSortIcon('name', sortField, sortDirection)}
-                  </Button>
-                </TableHead>
-                <TableHead>Chain</TableHead>
-                <TableHead className="text-right">Balance</TableHead>
-                <TableHead className="text-right">Price</TableHead>
-                <TableHead className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort('change')}
-                    className="-mr-3 h-8 hover:bg-transparent"
-                  >
-                    24h
-                    {getSortIcon('change', sortField, sortDirection)}
-                  </Button>
-                </TableHead>
-                <TableHead className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort('value')}
-                    className="-mr-3 h-8 hover:bg-transparent"
-                  >
-                    Value
-                    {getSortIcon('value', sortField, sortDirection)}
-                  </Button>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <AnimatePresence mode="popLayout">
-                {sortedAssets.map((asset, index) => (
-                  <AssetRow
-                    key={`${asset.chainId}-${asset.address}-${index}`}
-                    asset={asset}
-                    index={index}
-                  />
-                ))}
-              </AnimatePresence>
-            </TableBody>
-          </Table>
+        <CardContent className={viewMode === 'cards' ? 'pt-0' : 'p-0'}>
+          {viewMode === 'cards' ? (
+            <PositionCards assets={sortedAssets} />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[200px]">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort('name')}
+                      className="-ml-3 h-8 hover:bg-transparent"
+                    >
+                      Asset
+                      {getSortIcon('name', sortField, sortDirection)}
+                    </Button>
+                  </TableHead>
+                  <TableHead>Chain</TableHead>
+                  <TableHead className="text-right">Balance</TableHead>
+                  <TableHead className="text-right">Price</TableHead>
+                  <TableHead className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort('change')}
+                      className="-mr-3 h-8 hover:bg-transparent"
+                    >
+                      24h
+                      {getSortIcon('change', sortField, sortDirection)}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort('value')}
+                      className="-mr-3 h-8 hover:bg-transparent"
+                    >
+                      Value
+                      {getSortIcon('value', sortField, sortDirection)}
+                    </Button>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <AnimatePresence mode="popLayout">
+                  {sortedAssets.map((asset, index) => (
+                    <AssetRow
+                      key={`${asset.chainId}-${asset.address}-${index}`}
+                      asset={asset}
+                      index={index}
+                    />
+                  ))}
+                </AnimatePresence>
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </motion.div>
