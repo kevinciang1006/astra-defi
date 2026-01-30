@@ -21,3 +21,9 @@ export {
   type AssetPosition,
   type ChainSummary,
 } from './portfolio';
+
+export {
+  createSnapshot,
+  getHistoricalData,
+  type HistoricalDataPoint,
+} from './snapshot';

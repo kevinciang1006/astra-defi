@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAccount } from 'wagmi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, X, Zap, Link2, BarChart3 } from 'lucide-react';
 import { usePortfolio } from '@/hooks/use-portfolio';
 import { getDemoPortfolio } from '@/lib/demo';
 import { ConnectButton } from '@/components/wallet/connect-button';
-import { PortfolioSummary, AssetList, ChainBreakdown, PortfolioChart } from '@/components/dashboard';
+import { PortfolioSummary, AssetList, ChainBreakdown, PortfolioChart, LPPositions } from '@/components/dashboard';
+import { ErrorBoundary } from '@/components/error-boundary';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -22,6 +23,17 @@ export function DashboardContent() {
 
   // Show dashboard when connected OR in demo mode
   const showDashboard = isConnected || isDemoMode;
+
+  // Auto-create a portfolio snapshot when wallet connects and portfolio loads
+  const hasSnapshotted = useRef(false);
+  useEffect(() => {
+    if (isConnected && address && portfolio && !hasSnapshotted.current) {
+      hasSnapshotted.current = true;
+      fetch(`/api/portfolio/${address}/snapshot`, { method: 'POST' }).catch(
+        () => {} // Fire and forget — snapshot failure shouldn't affect UX
+      );
+    }
+  }, [isConnected, address, portfolio]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -128,28 +140,47 @@ export function DashboardContent() {
               </motion.div>
             )}
 
-            {/* Portfolio Summary */}
-            <PortfolioSummary portfolio={displayPortfolio ?? null} isLoading={displayLoading} />
+            {/* Portfolio Summary — renders first */}
+            <ErrorBoundary>
+              <PortfolioSummary portfolio={displayPortfolio ?? null} isLoading={displayLoading} onRefresh={() => refetch()} isRefreshing={isLoading} />
+            </ErrorBoundary>
 
-            {/* Portfolio Chart */}
-            <PortfolioChart
-              totalValue={displayPortfolio?.totalValueUsd ?? 0}
-              isLoading={displayLoading}
-            />
+            {/* Portfolio Chart — fetches history independently */}
+            <ErrorBoundary>
+              <PortfolioChart
+                totalValue={displayPortfolio?.totalValueUsd ?? 0}
+                address={address}
+                isDemoMode={isDemoMode}
+                isLoading={displayLoading}
+              />
+            </ErrorBoundary>
+
+            {/* Uniswap V3 LP Positions — fetches independently */}
+            <ErrorBoundary>
+              <LPPositions
+                address={address}
+                isDemoMode={isDemoMode}
+                isLoading={displayLoading}
+              />
+            </ErrorBoundary>
 
             {/* Two Column Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Asset List - Takes 2 columns */}
               <div className="lg:col-span-2">
-                <AssetList assets={displayPortfolio?.assets ?? []} isLoading={displayLoading} />
+                <ErrorBoundary>
+                  <AssetList assets={displayPortfolio?.assets ?? []} isLoading={displayLoading} />
+                </ErrorBoundary>
               </div>
 
               {/* Chain Breakdown - Takes 1 column */}
               <div>
-                <ChainBreakdown
-                  chainSummaries={displayPortfolio?.chainSummaries ?? []}
-                  isLoading={displayLoading}
-                />
+                <ErrorBoundary>
+                  <ChainBreakdown
+                    chainSummaries={displayPortfolio?.chainSummaries ?? []}
+                    isLoading={displayLoading}
+                  />
+                </ErrorBoundary>
               </div>
             </div>
           </div>

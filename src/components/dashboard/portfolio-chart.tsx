@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   AreaChart,
@@ -14,11 +14,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatUsd } from '@/lib/utils/format';
+import type { ApiResponse } from '@/lib/api';
+import type { HistoricalDataPoint } from '@/lib/services';
 
 type TimePeriod = '7d' | '30d' | '90d' | '1y';
 
 interface PortfolioChartProps {
   totalValue: number;
+  address?: string;
+  isDemoMode?: boolean;
   isLoading?: boolean;
 }
 
@@ -28,7 +32,9 @@ interface ChartDataPoint {
   timestamp: number;
 }
 
-// Generate mock historical data based on current value and time period
+/**
+ * Generate synthetic chart data as a fallback when no historical snapshots exist.
+ */
 function generateChartData(
   currentValue: number,
   period: TimePeriod
@@ -44,18 +50,15 @@ function generateChartData(
   };
 
   const days = periodDays[period];
-  let value = currentValue * 0.85; // Start at 85% of current value
+  let value = currentValue * 0.85;
   const dailyGrowth = (currentValue - value) / days;
 
   for (let i = days; i >= 0; i--) {
     const date = new Date(now);
     date.setDate(date.getDate() - i);
 
-    // Add some realistic volatility
     const volatility = (Math.random() - 0.45) * (currentValue * 0.02);
     value = value + dailyGrowth + volatility;
-
-    // Ensure value doesn't go negative
     value = Math.max(value, currentValue * 0.5);
 
     data.push({
@@ -65,7 +68,6 @@ function generateChartData(
     });
   }
 
-  // Ensure last point matches current value
   if (data.length > 0) {
     data[data.length - 1].value = currentValue;
   }
@@ -83,13 +85,75 @@ function formatChartDate(date: Date, period: TimePeriod): string {
   }
 }
 
-export function PortfolioChart({ totalValue, isLoading }: PortfolioChartProps) {
-  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('30d');
+/**
+ * Transform API historical data into chart data points.
+ */
+function transformHistoricalData(
+  points: HistoricalDataPoint[],
+  period: TimePeriod
+): ChartDataPoint[] {
+  return points.map((point) => {
+    const date = new Date(point.timestamp);
+    return {
+      date: formatChartDate(date, period),
+      value: Math.round(point.totalValueUsd * 100) / 100,
+      timestamp: date.getTime(),
+    };
+  });
+}
 
-  const chartData = useMemo(
-    () => generateChartData(totalValue, selectedPeriod),
-    [totalValue, selectedPeriod]
-  );
+export function PortfolioChart({
+  totalValue,
+  address,
+  isDemoMode,
+  isLoading,
+}: PortfolioChartProps) {
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('30d');
+  const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[] | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Fetch real historical data when we have an address and aren't in demo mode
+  useEffect(() => {
+    if (!address || isDemoMode) {
+      setHistoricalData(null);
+      return;
+    }
+
+    let cancelled = false;
+    setHistoryLoading(true);
+
+    fetch(`/api/portfolio/${address}/history?period=${selectedPeriod}`)
+      .then((res) => res.json())
+      .then((data: ApiResponse<HistoricalDataPoint[]>) => {
+        if (cancelled) return;
+        if (data.success && data.data.length > 0) {
+          setHistoricalData(data.data);
+        } else {
+          setHistoricalData(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setHistoricalData(null);
+      })
+      .finally(() => {
+        if (!cancelled) setHistoryLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [address, isDemoMode, selectedPeriod]);
+
+  const chartData = useMemo(() => {
+    // Use real data if available
+    if (historicalData && historicalData.length > 0) {
+      return transformHistoricalData(historicalData, selectedPeriod);
+    }
+    // Fall back to generated data for demo mode or when no snapshots exist
+    return generateChartData(totalValue, selectedPeriod);
+  }, [historicalData, totalValue, selectedPeriod]);
+
+  const isRealData = historicalData !== null && historicalData.length > 0;
 
   if (isLoading) {
     return <PortfolioChartSkeleton />;
@@ -102,7 +166,6 @@ export function PortfolioChart({ totalValue, isLoading }: PortfolioChartProps) {
     { label: '1Y', value: '1y' },
   ];
 
-  // Calculate percentage change for the period
   const firstValue = chartData[0]?.value ?? 0;
   const lastValue = chartData[chartData.length - 1]?.value ?? 0;
   const periodChange = firstValue > 0 ? ((lastValue - firstValue) / firstValue) * 100 : 0;
@@ -117,7 +180,19 @@ export function PortfolioChart({ totalValue, isLoading }: PortfolioChartProps) {
       <Card className="border-border">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold">Portfolio Value</CardTitle>
+            <div className="flex items-center gap-3">
+              <CardTitle className="text-lg font-semibold">Portfolio Value</CardTitle>
+              {!isRealData && !isDemoMode && !historyLoading && (
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                  Simulated
+                </span>
+              )}
+              {historyLoading && (
+                <span className="text-xs text-muted-foreground animate-pulse">
+                  Loading history...
+                </span>
+              )}
+            </div>
             <div className="flex gap-1">
               {periods.map((period) => (
                 <Button

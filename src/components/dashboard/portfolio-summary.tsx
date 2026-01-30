@@ -1,7 +1,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Wallet, Layers, Activity, BarChart3 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { TrendingUp, TrendingDown, Wallet, Layers, Activity, BarChart3, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatUsd, getChangeColor } from '@/lib/utils/format';
@@ -10,9 +12,32 @@ import type { Portfolio } from '@/lib/services';
 interface PortfolioSummaryProps {
   portfolio: Portfolio | null;
   isLoading?: boolean;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
-export function PortfolioSummary({ portfolio, isLoading }: PortfolioSummaryProps) {
+function useTimeAgo(isoTimestamp: string | undefined): string {
+  const [label, setLabel] = useState('');
+
+  useEffect(() => {
+    if (!isoTimestamp) return;
+
+    function update() {
+      const seconds = Math.floor((Date.now() - new Date(isoTimestamp!).getTime()) / 1000);
+      if (seconds < 60) setLabel(`${seconds}s ago`);
+      else if (seconds < 3600) setLabel(`${Math.floor(seconds / 60)}m ago`);
+      else setLabel(`${Math.floor(seconds / 3600)}h ago`);
+    }
+
+    update();
+    const interval = setInterval(update, 10_000);
+    return () => clearInterval(interval);
+  }, [isoTimestamp]);
+
+  return label;
+}
+
+export function PortfolioSummary({ portfolio, isLoading, onRefresh, isRefreshing }: PortfolioSummaryProps) {
   if (isLoading) {
     return <PortfolioSummarySkeleton />;
   }
@@ -73,11 +98,12 @@ export function PortfolioSummary({ portfolio, isLoading }: PortfolioSummaryProps
               </div>
             </div>
 
-            {/* Live Indicator */}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="w-2 h-2 rounded-full bg-success animate-pulse-live" />
-              <span>Live</span>
-            </div>
+            {/* Live Indicator & Refresh */}
+            <DataFreshnessIndicator
+              lastUpdated={portfolio.lastUpdated}
+              onRefresh={onRefresh}
+              isRefreshing={isRefreshing}
+            />
           </div>
 
           {/* Stats Grid */}
@@ -125,6 +151,47 @@ function StatCard({ icon, label, value, valueClassName = '' }: StatCardProps) {
         {label}
       </p>
       <p className={`text-xl font-semibold ${valueClassName}`}>{value}</p>
+    </div>
+  );
+}
+
+function DataFreshnessIndicator({
+  lastUpdated,
+  onRefresh,
+  isRefreshing,
+}: {
+  lastUpdated: string;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
+}) {
+  const timeAgo = useTimeAgo(lastUpdated);
+  const ageMs = Date.now() - new Date(lastUpdated).getTime();
+  const isStale = ageMs > 120_000; // >2 minutes
+
+  return (
+    <div className="flex items-center gap-2">
+      {isStale ? (
+        <div className="flex items-center gap-1.5 text-xs text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md">
+          <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+          <span>Stale &middot; {timeAgo}</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="w-2 h-2 rounded-full bg-success animate-pulse-live" />
+          <span>{timeAgo || 'Live'}</span>
+        </div>
+      )}
+      {onRefresh && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={onRefresh}
+          disabled={isRefreshing}
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </Button>
+      )}
     </div>
   );
 }

@@ -234,3 +234,33 @@ export async function getCachedPrice(
   const prices = await fetchTokenPricesByAddress(chainId, [address]);
   return prices.get(address.toLowerCase()) ?? null;
 }
+
+/**
+ * Fallback: query the MySQL TokenPrice table when CoinGecko is unavailable.
+ * The price indexer worker populates this table periodically.
+ */
+export async function getDbFallbackPrice(
+  chainId: SupportedChainId,
+  address: string
+): Promise<TokenPrice | null> {
+  try {
+    // Dynamic import to avoid circular dependencies at module load time
+    const { prisma } = await import('@/lib/db/client');
+    const record = await prisma.tokenPrice.findUnique({
+      where: { id: `${chainId}:${address.toLowerCase()}` },
+    });
+
+    if (!record) return null;
+
+    return {
+      id: record.symbol.toLowerCase(),
+      symbol: record.symbol,
+      name: record.name,
+      priceUsd: Number(record.priceUsd),
+      priceChange24h: null,
+      lastUpdated: record.updatedAt.toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}

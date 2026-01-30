@@ -3,6 +3,7 @@ import { type Address } from 'viem';
 import { success, errors, ethereumAddressSchema, safeValidate } from '@/lib/api';
 import { getPortfolio } from '@/lib/services';
 import { isSupportedChain, type SupportedChainId } from '@/lib/chains';
+import { checkRateLimit, RateLimits } from '@/lib/middleware/rate-limit';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -25,6 +26,11 @@ export async function GET(
   { params }: { params: Promise<{ address: string }> }
 ) {
   try {
+    // Rate limit by client IP
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'anonymous';
+    const rateLimited = await checkRateLimit(`portfolio:${clientIp}`, RateLimits.portfolio);
+    if (rateLimited) return rateLimited;
+
     // Validate address parameter
     const { address } = await params;
     const validation = safeValidate(ethereumAddressSchema, address);
