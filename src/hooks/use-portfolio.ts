@@ -15,13 +15,13 @@ async function fetchPortfolio(address: string): Promise<Portfolio> {
   return data.data;
 }
 
-export function usePortfolio(address: string | undefined) {
+export function usePortfolio(address: string | undefined, refreshIntervalSeconds = 60) {
   return useQuery({
     queryKey: ['portfolio', address],
     queryFn: () => fetchPortfolio(address!),
     enabled: !!address,
     staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 60 * 1000, // Refetch every minute
+    refetchInterval: refreshIntervalSeconds * 1000,
     retry: 2,
   });
 }

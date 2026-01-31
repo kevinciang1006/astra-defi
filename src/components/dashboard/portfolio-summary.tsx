@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Wallet, Layers, Activity, BarChart3, RefreshCw } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Layers, Activity, Trophy, PieChart, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -60,10 +60,20 @@ export function PortfolioSummary({ portfolio, isLoading, onRefresh, isRefreshing
   const isPositive = portfolio.totalChange24hPercent >= 0;
   const TrendIcon = isPositive ? TrendingUp : TrendingDown;
 
-  // Calculate mock APY (average of 8-15% for demo purposes)
-  const avgApy = 12.4;
-  // Calculate mock 24h volume based on portfolio value
-  const volume24h = portfolio.totalValueUsd * 0.15;
+  // Best 24h performer from actual asset data
+  const bestPerformer = portfolio.assets.length > 0
+    ? portfolio.assets.reduce((best, asset) =>
+        (asset.priceChange24h ?? 0) > (best.priceChange24h ?? 0) ? asset : best
+      )
+    : null;
+
+  // Top holding by value
+  const topHolding = portfolio.assets.length > 0
+    ? portfolio.assets.reduce((top, asset) => asset.valueUsd > top.valueUsd ? asset : top)
+    : null;
+  const topHoldingPct = topHolding && portfolio.totalValueUsd > 0
+    ? (topHolding.valueUsd / portfolio.totalValueUsd) * 100
+    : 0;
 
   return (
     <motion.div
@@ -119,15 +129,15 @@ export function PortfolioSummary({ portfolio, isLoading, onRefresh, isRefreshing
               value={portfolio.chainSummaries.length.toString()}
             />
             <StatCard
-              icon={<TrendingUp className="h-4 w-4" />}
-              label="Avg APY"
-              value={`${avgApy.toFixed(1)}%`}
-              valueClassName="text-success"
+              icon={<Trophy className="h-4 w-4" />}
+              label="Best 24h"
+              value={bestPerformer ? `${bestPerformer.symbol} +${(bestPerformer.priceChange24h ?? 0).toFixed(1)}%` : '—'}
+              valueClassName={bestPerformer && (bestPerformer.priceChange24h ?? 0) > 0 ? 'text-success' : ''}
             />
             <StatCard
-              icon={<BarChart3 className="h-4 w-4" />}
-              label="24h Volume"
-              value={formatUsd(volume24h, { compact: true })}
+              icon={<PieChart className="h-4 w-4" />}
+              label="Top Holding"
+              value={topHolding ? `${topHolding.symbol} ${topHoldingPct.toFixed(0)}%` : '—'}
             />
           </div>
         </CardContent>

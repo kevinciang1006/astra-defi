@@ -6,16 +6,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Play, X, Zap, Link2, BarChart3 } from 'lucide-react';
 import { usePortfolio } from '@/hooks/use-portfolio';
 import { getDemoPortfolio } from '@/lib/demo';
+import { useAtom } from 'jotai';
 import { ConnectButton } from '@/components/wallet/connect-button';
 import { PortfolioSummary, AssetList, ChainBreakdown, PortfolioChart, LPPositions } from '@/components/dashboard';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { SettingsPanel, useThemeEffect } from '@/components/settings/settings-panel';
+import { settingsAtom } from '@/lib/store/settings';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 export function DashboardContent() {
   const { address, isConnected } = useAccount();
-  const { data: portfolio, isLoading, error, refetch } = usePortfolio(address);
+  const [settings] = useAtom(settingsAtom);
+  const { data: portfolio, isLoading, error, refetch } = usePortfolio(address, settings.refreshInterval);
   const [isDemoMode, setIsDemoMode] = useState(false);
+
+  // Apply theme from persisted settings
+  useThemeEffect();
 
   // Use demo data when in demo mode
   const displayPortfolio = isDemoMode ? getDemoPortfolio() : portfolio;
@@ -49,26 +56,9 @@ export function DashboardContent() {
               <span className="font-bold text-xl gradient-text">AstraDeFi</span>
             </div>
 
-            {/* Nav Links - Hidden on mobile */}
-            <nav className="hidden md:flex items-center gap-6">
-              <a
-                href="#overview"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Overview
-              </a>
-              <a
-                href="#history"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                History
-              </a>
-              <a
-                href="#settings"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Settings
-              </a>
+            {/* Settings */}
+            <nav className="hidden md:flex items-center">
+              <SettingsPanel />
             </nav>
 
             {isDemoMode && (
