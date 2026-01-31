@@ -73,7 +73,7 @@ export function SettingsPanel() {
         </button>
       </SheetTrigger>
       <SheetContent>
-        <SheetTitle className="sr-only">Creator Details</SheetTitle>
+        <SheetTitle>Test</SheetTitle>
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
