@@ -1,0 +1,20 @@
+# This file controls what gcloud builds submit uploads.
+# Unlike .gitignore, we ALLOW .env.production (needed for NEXT_PUBLIC_ vars at build time).
+node_modules
+.git
+.gitignore
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production.local
+.next
+docker-compose.yml
+docs/
+e2e/
+*.md
+.github/
+.vscode/
+coverage/

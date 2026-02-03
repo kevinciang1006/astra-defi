@@ -1,5 +1,5 @@
 # Base image
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -19,15 +19,18 @@ RUN \
 
 # Rebuild the source code only when needed
 FROM base AS builder
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the build.
-# ENV NEXT_TELEMETRY_DISABLED 1
+# Generate Prisma client
+RUN npx prisma generate
 
+# Set NODE_ENV so next build loads .env.production
+# Also verify the env file exists
+ENV NODE_ENV=production
+RUN cat .env.production || echo "WARNING: .env.production not found"
 RUN npm run build
 
 # Production image, copy all the files and run next
@@ -38,6 +41,7 @@ ENV NODE_ENV production
 # Uncomment the following line in case you want to disable telemetry during the runtime.
 # ENV NEXT_TELEMETRY_DISABLED 1
 
+RUN apk add --no-cache libc6-compat openssl
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
@@ -47,11 +51,13 @@ COPY --from=builder /app/public ./public
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
 USER nextjs
 
 EXPOSE 3000
 
 ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
 
 CMD ["node", "server.js"]

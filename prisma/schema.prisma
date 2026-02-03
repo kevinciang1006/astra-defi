@@ -41,7 +41,7 @@ model PortfolioSnapshot {
   // Relation
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, timestamp(sort: Desc)])
+  @@index([userId, timestamp])
 }
 
 // Token price cache - reduces external API calls
