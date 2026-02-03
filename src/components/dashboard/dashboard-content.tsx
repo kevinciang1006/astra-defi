@@ -15,18 +15,28 @@ import { settingsAtom } from '@/lib/store/settings';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
+const DEMO_WALLET_ADDRESS = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'; // vitalik.eth
+
 export function DashboardContent() {
   const { address, isConnected } = useAccount();
   const [settings] = useAtom(settingsAtom);
-  const { data: portfolio, isLoading, error, refetch } = usePortfolio(address, settings.refreshInterval);
-  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [demoAddress, setDemoAddress] = useState<string | null>(null);
+
+  // When user connects their own wallet, clear demo mode
+  useEffect(() => {
+    if (isConnected) setDemoAddress(null);
+  }, [isConnected]);
+
+  const isDemoMode = !!demoAddress;
+  const activeAddress = address ?? demoAddress ?? undefined;
+  const { data: portfolio, isLoading, error, refetch } = usePortfolio(activeAddress, settings.refreshInterval);
 
   // Apply theme from persisted settings
   useThemeEffect();
 
-  // Use demo data when in demo mode
-  const displayPortfolio = isDemoMode ? getDemoPortfolio() : portfolio;
-  const displayLoading = isDemoMode ? false : isLoading;
+  // Fall back to mock data if demo wallet fetch fails
+  const displayPortfolio = isDemoMode && error ? getDemoPortfolio() : portfolio;
+  const displayLoading = isDemoMode && !error ? isLoading : (isDemoMode ? false : isLoading);
 
   // Show dashboard when connected OR in demo mode
   const showDashboard = isConnected || isDemoMode;
@@ -72,7 +82,7 @@ export function DashboardContent() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsDemoMode(false)}
+                onClick={() => setDemoAddress(null)}
                 className="gap-1"
               >
                 <X className="h-4 w-4" />
@@ -96,7 +106,7 @@ export function DashboardContent() {
             <div className="container mx-auto px-4 py-2 flex items-center justify-center gap-2 text-amber-600 dark:text-amber-400 text-sm">
               <Play className="h-4 w-4" />
               <span>
-                You&apos;re viewing demo data. Connect your wallet to see your real portfolio.
+                Viewing a demo wallet (vitalik.eth) with live on-chain data. Connect your wallet to see your own portfolio.
               </span>
             </div>
           </motion.div>
@@ -106,7 +116,7 @@ export function DashboardContent() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {!showDashboard ? (
-          <WelcomeScreen onViewDemo={() => setIsDemoMode(true)} />
+          <WelcomeScreen onViewDemo={() => setDemoAddress(DEMO_WALLET_ADDRESS)} />
         ) : (
           <div className="space-y-6">
             {/* Error Banner */}
@@ -139,7 +149,7 @@ export function DashboardContent() {
             <ErrorBoundary>
               <PortfolioChart
                 totalValue={displayPortfolio?.totalValueUsd ?? 0}
-                address={address}
+                address={activeAddress}
                 isDemoMode={isDemoMode}
                 isLoading={displayLoading}
               />
@@ -148,7 +158,7 @@ export function DashboardContent() {
             {/* Uniswap V3 LP Positions — fetches independently */}
             <ErrorBoundary>
               <LPPositions
-                address={address}
+                address={activeAddress}
                 isDemoMode={isDemoMode}
                 isLoading={displayLoading}
               />
@@ -227,7 +237,7 @@ function WelcomeScreen({ onViewDemo }: WelcomeScreenProps) {
           className="gap-2"
         >
           <Play className="h-4 w-4" />
-          View Demo
+          View Demo Wallet
         </Button>
       </div>
 
